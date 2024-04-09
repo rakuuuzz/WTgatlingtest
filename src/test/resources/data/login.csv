@@ -1,0 +1,12 @@
+login,password,firstName,lastName,street,city,seatPref,seatType,creditCard,expDate
+aaa,123,Andrey,Karasev,Rachkova,Kstovo,Aisle,Coach,1234,098
+bbb,123,Andrey,Karasev,Rachkova,Kstovo,None,Business,1234,098
+ccc,123,Andrey,Karasev,Rachkova,Kstovo,None,First,1234,098
+ddd,123,Andrey,Karasev,Rachkova,Kstovo,Window,Business,1234,098
+eee,123,Andrey,Karasev,Rachkova,Kstovo,None,Coach,1234,098
+fff,123,Andrey,Karasev,Rachkova,Kstovo,Aisle,Coach,1234,098
+ggg,123,Andrey,Karasev,Rachkova,Kstovo,None,First,1234,098
+kkk,123,Andrey,Karasev,Rachkova,Kstovo,Window,First,1234,098
+lll,123,Andrey,Karasev,Rachkova,Kstovo,Aisle,Coach,1234,098
+zzz,123,Andrey,Karasev,Rachkova,Kstovo,None,Business,1234,098
+
