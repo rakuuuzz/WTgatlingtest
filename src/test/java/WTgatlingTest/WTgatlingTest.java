@@ -14,16 +14,12 @@ public class WTgatlingTest extends Simulation {
 
   FeederBuilder.Batchable<String> csvLogin = csv("data/Login.csv").circular();
 
-  private HttpProtocolBuilder httpProtocol = http
-    .baseUrl("http://localhost:1080")
-    .inferHtmlResources(AllowList(), DenyList(".*\\.js", ".*\\.css", ".*\\.gif", ".*\\.jpeg", ".*\\.jpg", ".*\\.ico", ".*\\.woff", ".*\\.woff2", ".*\\.(t|o)tf", ".*\\.png", ".*\\.svg", ".*detectportal\\.firefox\\.com.*"));
+  DateTimeFormatter formatter =  DateTimeFormatter.ofPattern("MM/dd/yyyy");
+  String datearr = LocalDate.now().plusDays(1).format(formatter);
+  String datedepart = LocalDate.now().plusDays(5).format(formatter);
 
-    DateTimeFormatter formatter =  DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    String datearr = LocalDate.now().plusDays(1).format(formatter);
-    String datedepart = LocalDate.now().plusDays(5).format(formatter);
 
-  private ScenarioBuilder scn = scenario("WTgatlingTest")
-    .exec(
+      ChainBuilder HomePage = exec(
       http("HomePage")
         .get("/cgi-bin/welcome.pl?signOff=true")
         .resources(
@@ -34,7 +30,12 @@ public class WTgatlingTest extends Simulation {
             )
         ),
       pause(5)
-      .feed(csvLogin),
+      );
+
+
+
+      ChainBuilder Login = exec(
+      feed(csvLogin),
       http("Login")
         .post("/cgi-bin/login.pl")
         .check(regex("User password was correct"))
@@ -47,10 +48,10 @@ public class WTgatlingTest extends Simulation {
             http("CheckLogin")
                 .get("/cgi-bin/login.pl?intro=true")
                 .check(regex("Welcome, <b>#{login}</b>"))
-
-    ))
-    .pause(5)
-    .exec(
+        ),
+      pause(5)
+      );
+    ChainBuilder go_to_FlightPage = exec(
       http("go_to_FlightsPage")
         .get("/cgi-bin/welcome.pl?page=search")
             .check(regex(" User has returned to the search page."))
@@ -60,8 +61,9 @@ public class WTgatlingTest extends Simulation {
             .check(regex("<option value=\"(.*?)\"").findAll().saveAs("CityArr")),
           http("request_10")
             .get("/cgi-bin/nav.pl?page=menu&in=flights")
-        )
-    )
+        ),
+            pause(5)
+
     .exec(session -> {
         List<String> cityArr = (List<String>) session.get("CityArr");
         Random rand = new Random();
@@ -73,9 +75,8 @@ public class WTgatlingTest extends Simulation {
         return session
             .set("citydepart",citydepart)
             .set("cityarrive",cityarrive);
-          })
-    .pause(5)
-    .exec(
+          }));
+    ChainBuilder ReservationPage = exec(
       http("ReservationPage")
         .post("/cgi-bin/reservations.pl")
         .check(
@@ -93,8 +94,9 @@ public class WTgatlingTest extends Simulation {
         .formParam("findFlights.y", "9")
         .formParam(".cgifields", "roundtrip")
         .formParam(".cgifields", "seatType")
-        .formParam(".cgifields", "seatPref")
-    )
+        .formParam(".cgifields", "seatPref"),
+        pause(5)
+
           .exec(session -> {
               List<String> outboundFlights = (List<String>) session.get("outboundFlights");
               Random rand = new Random();
@@ -103,9 +105,8 @@ public class WTgatlingTest extends Simulation {
 
               return session
                 .set("outboundFlight",outboundFlight_1);
-          })
-    .pause(5)
-    .exec(
+          }));
+    ChainBuilder ConfReservation = exec(
       http("ConfReservation")
         .post("/cgi-bin/reservations.pl")
         .check(regex("Payment Details"))
@@ -115,10 +116,10 @@ public class WTgatlingTest extends Simulation {
         .formParam("seatType", "#{seatType}")
         .formParam("seatPref", "#{seatPref}")
         .formParam("reserveFlights.x", "54")
-        .formParam("reserveFlights.y", "9")
-    )
-    .pause(5)
-    .exec(
+        .formParam("reserveFlights.y", "9"),
+        pause(5)
+    );
+    ChainBuilder LastChooseReservation = exec(
       http("LastChooseReservation")
         .post("/cgi-bin/reservations.pl")
         .check(regex(" #{citydepart} to #{cityarrive}."))
@@ -142,13 +143,17 @@ public class WTgatlingTest extends Simulation {
         .formParam(".cgifields", "saveCC")
     );
 
+    private HttpProtocolBuilder httpProtocol = http
+            .baseUrl("http://localhost:1080")
+            .inferHtmlResources(AllowList(), DenyList(".*\\.js", ".*\\.css", ".*\\.gif", ".*\\.jpeg", ".*\\.jpg", ".*\\.ico", ".*\\.woff", ".*\\.woff2", ".*\\.(t|o)tf", ".*\\.png", ".*\\.svg", ".*detectportal\\.firefox\\.com.*"));
+
+    private ScenarioBuilder scn = scenario("WTgatlingTest").exec(HomePage,Login,go_to_FlightPage,ReservationPage,ConfReservation,LastChooseReservation);
+
     {
         setUp(
                 scn.injectOpen(
-                    atOnceUsers(10),
-                        rampUsers(10).during(300),
-                        atOnceUsers(20),
-                        rampUsers(20).during(300)
+                    atOnceUsers(1)
+
                 )
         ).protocols(httpProtocol);
     }
